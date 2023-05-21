@@ -13,7 +13,7 @@
 	<name>Explore With Me</name>
 	<modules>
 		<module>stats</module>
-		<module>ewm-service</module>
+		<module>main-service</module>
 	</modules>
 
 	<groupId>ru.practicum</groupId>
@@ -32,6 +32,7 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
+			<version>2.7.5</version>
 		</dependency>
 
 		<dependency>
@@ -43,7 +44,6 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<version>1.18.26</version>
 			<optional>true</optional>
 		</dependency>
 
