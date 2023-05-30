@@ -15,8 +15,13 @@ import java.util.Objects;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class StatsClient {
 
-    static final String URL = "http://stats-server:9090";
-    final WebClient webClient = WebClient.create(URL);
+    ConnectionURL connectionURL;
+
+    final WebClient webClient = WebClient.create(connectionURL.getUrl());
+
+    public StatsClient(ConnectionURL connectionURL) {
+        this.connectionURL = connectionURL;
+    }
 
     public EndpointHitDto saveHit(EndpointHitDto endpointHitDto) {
         return webClient.post()

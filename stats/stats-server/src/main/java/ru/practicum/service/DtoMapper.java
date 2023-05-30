@@ -1,7 +1,5 @@
 package ru.practicum.service;
 
-import lombok.AccessLevel;
-import lombok.experimental.FieldDefaults;
 import ru.practicum.EndpointHitDto;
 import ru.practicum.StatsDto;
 import ru.practicum.model.EndpointHit;
@@ -10,7 +8,6 @@ import ru.practicum.model.Stats;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-@FieldDefaults(level = AccessLevel.PRIVATE)
 public class DtoMapper {
 
     public static EndpointHitDto toEndpointHitDto(EndpointHit endpointHit) {

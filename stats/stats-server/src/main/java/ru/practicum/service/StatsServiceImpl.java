@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.EndpointHitDto;
 import ru.practicum.StatsDto;
-import ru.practicum.exception.BadRequestException;
 import ru.practicum.repository.StatsRepository;
 
 import java.time.LocalDateTime;
@@ -23,12 +22,6 @@ public class StatsServiceImpl implements StatsService {
 
     @Transactional
     public EndpointHitDto saveHit(EndpointHitDto endpointHitDto) {
-        if (endpointHitDto.getApp() == null || endpointHitDto.getApp().isEmpty()) {
-            throw new BadRequestException("app не указан");
-        }
-        if (endpointHitDto.getUri() == null || endpointHitDto.getUri().isEmpty()) {
-            throw new BadRequestException("uri не указан");
-        }
         return DtoMapper.toEndpointHitDto(statsRepository.save(DtoMapper.toEndpointHit(endpointHitDto)));
     }
 
