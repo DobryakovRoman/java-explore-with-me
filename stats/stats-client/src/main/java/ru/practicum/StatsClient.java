@@ -2,6 +2,7 @@ package ru.practicum;
 
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -15,12 +16,10 @@ import java.util.Objects;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class StatsClient {
 
-    ConnectionURL connectionURL;
+    final WebClient webClient;
 
-    final WebClient webClient = WebClient.create(connectionURL.getUrl());
-
-    public StatsClient(ConnectionURL connectionURL) {
-        this.connectionURL = connectionURL;
+    public StatsClient(@Value("${stats-server.url}") String connectionURL) {
+        webClient = WebClient.create(connectionURL);
     }
 
     public EndpointHitDto saveHit(EndpointHitDto endpointHitDto) {

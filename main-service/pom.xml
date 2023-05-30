@@ -11,7 +11,7 @@
 
     <artifactId>main-service</artifactId>
 
-    <name>ewm-service</name>
+    <name>main-service</name>
 
     <dependencies>
         <dependency>
