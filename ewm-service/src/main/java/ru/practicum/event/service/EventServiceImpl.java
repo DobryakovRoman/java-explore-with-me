@@ -322,11 +322,12 @@ public class EventServiceImpl implements EventService {
         if (text == null) {
             text = "";
         }
-        String requestURI = request.getRequestURI();
-        StringBuffer requestURL = request.getRequestURL();
-        if (categories.size() > 0 && !onlyAvailable && paid == null && text.isEmpty() && rangeStart == null && rangeEnd == null) {
-            events = eventRepository.findAllByCategoryIdPageable(categories, PageRequest.of(from / size, size));
-        } else if (rangeEnd == null) {
+//        String requestURI = request.getRequestURI();
+//        StringBuffer requestURL = request.getRequestURL();
+//        if (categories.size() > 0 && !onlyAvailable && paid == null && text.isEmpty() && rangeStart == null && rangeEnd == null) {
+//            events = eventRepository.findAllByCategoryIdPageable(categories, PageRequest.of(from / size, size));
+//        } else
+        if (rangeEnd == null) {
             events = eventRepository.findEventsByText(text.toLowerCase(), PageRequest.of(from / size, size));
         } else {
             endDate = LocalDateTime.parse(rangeEnd, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
