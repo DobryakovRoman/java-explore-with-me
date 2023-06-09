@@ -69,7 +69,7 @@ public class CategoryServiceImpl implements CategoryService {
                     .orElseThrow(
                             () -> new ConflictException("Название категории " + categoryDto.getName() + " уже существует")
                     ).getId();
-            if (catId != id) {
+            if (!catId.equals(id)) {
                 throw new ConflictException("Название категории " + categoryDto.getName() + " уже существует");
             }
         }
