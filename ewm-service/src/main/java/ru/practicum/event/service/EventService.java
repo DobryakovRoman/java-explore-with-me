@@ -21,7 +21,7 @@ public interface EventService {
     EventFullDto updateEventOfUserByIds(Long userId, Long eventId, UpdateEventUserRequest request);
 
     List<EventShortDto> getEventsWithFilters(String text,
-                                             List<Integer> categories,
+                                             List<Long> categories,
                                              Boolean paid,
                                              String rangeStart,
                                              String rangeEnd,

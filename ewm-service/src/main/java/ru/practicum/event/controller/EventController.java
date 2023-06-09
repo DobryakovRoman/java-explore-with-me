@@ -44,13 +44,13 @@ public class EventController {
 
     @GetMapping("/events/{id}")
     public EventFullDto getEventById(@PathVariable Long id, HttpServletRequest request) {
-        log.info("Запрос: Получение подробной информации об опубликованном событии по его идентификатору");
+        log.info("Получение подробной информации об опубликованном событии по его идентификатору");
         return eventService.getEventDtoById(id, request);
     }
 
     @GetMapping("/events")
     public List<EventShortDto> getEventsWithFilters(@RequestParam(required = false) String text,
-                                                    @RequestParam(required = false) List<Integer> categories,
+                                                    @RequestParam(required = false) List<Long> categories,
                                                     @RequestParam(required = false) Boolean paid,
                                                     @RequestParam(required = false) String rangeStart,
                                                     @RequestParam(required = false) String rangeEnd,
@@ -59,7 +59,7 @@ public class EventController {
                                                     @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
                                                     @Positive @RequestParam(defaultValue = "10") Integer size,
                                                     HttpServletRequest request) {
-        log.info("Запрос: Получение событий с возможностью фильтрации");
+        log.info("Получение событий с возможностью фильтрации");
         return eventService.getEventsWithFilters(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size, request);
     }
 

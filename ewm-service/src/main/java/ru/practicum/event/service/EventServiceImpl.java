@@ -190,7 +190,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public EventFullDto getEventDtoById(Long eventId, HttpServletRequest request) {
-        statsClient.saveHit(new EndpointHitDto("main-service",
+        statsClient.saveHit(new EndpointHitDto("ewm-service",
                 request.getRequestURI(),
                 request.getRemoteAddr(),
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
@@ -302,7 +302,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventShortDto> getEventsWithFilters(String text,
-                                                    List<Integer> categories,
+                                                    List<Long> categories,
                                                     Boolean paid,
                                                     String rangeStart,
                                                     String rangeEnd,
@@ -324,6 +324,8 @@ public class EventServiceImpl implements EventService {
         }
         if (rangeEnd == null) {
             events = eventRepository.findEventsByText(text.toLowerCase(), PageRequest.of(from / size, size));
+        } else if (categories.size() > 0) {
+            events = eventRepository.findAllByCategoryIdPageable(categories, PageRequest.of(from / size, size));
         } else {
             endDate = LocalDateTime.parse(rangeEnd, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             if (startDate.isAfter(endDate)) {
@@ -338,7 +340,7 @@ public class EventServiceImpl implements EventService {
         events = events.stream()
                 .filter((event) -> EventState.PUBLISHED.equals(event.getState()))
                 .collect(Collectors.toList());
-        statsClient.saveHit(new EndpointHitDto("main-service",
+        statsClient.saveHit(new EndpointHitDto("ewm-service",
                 request.getRequestURI(),
                 request.getRemoteAddr(),
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));

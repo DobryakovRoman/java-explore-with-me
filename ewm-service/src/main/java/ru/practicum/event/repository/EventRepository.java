@@ -48,4 +48,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findAllByTextAndDateRange(String text, LocalDateTime startDate, LocalDateTime endDate, Pageable page);
 
     List<Event> findAllByCategoryId(Long catId);
+
+    @Query("SELECT event FROM Event event " +
+            "WHERE event.category.id in :categories ")
+    List<Event> findAllByCategoryIdPageable(List<Long> categories, Pageable page);
 }
