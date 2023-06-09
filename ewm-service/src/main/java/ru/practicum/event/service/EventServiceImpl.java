@@ -322,10 +322,10 @@ public class EventServiceImpl implements EventService {
         if (text == null) {
             text = "";
         }
-        if (rangeEnd == null) {
-            events = eventRepository.findEventsByText(text.toLowerCase(), PageRequest.of(from / size, size));
-        } else if (categories.size() > 0) {
+        if (categories.size() > 0 && !onlyAvailable && paid == null) {
             events = eventRepository.findAllByCategoryIdPageable(categories, PageRequest.of(from / size, size));
+        } else if (rangeEnd == null) {
+            events = eventRepository.findEventsByText(text.toLowerCase(), PageRequest.of(from / size, size));
         } else {
             endDate = LocalDateTime.parse(rangeEnd, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             if (startDate.isAfter(endDate)) {
