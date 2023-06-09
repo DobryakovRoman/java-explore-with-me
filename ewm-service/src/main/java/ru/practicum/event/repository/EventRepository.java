@@ -52,4 +52,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     @Query("SELECT event FROM Event event " +
             "WHERE event.category.id in :categories ")
     List<Event> findAllByCategoryIdPageable(List<Long> categories, Pageable page);
+
+    @Query("SELECT DISTINCT e FROM Event e " +
+            "WHERE (:categories IS NULL OR e.category.id IN :categories) " +
+            "AND (:paid IS NULL OR e.paid = :paid) " +
+            "ORDER BY e.eventDate DESC")
+    List<Event> findEventList(List<Long> categories, Boolean paid, Pageable page);
 }

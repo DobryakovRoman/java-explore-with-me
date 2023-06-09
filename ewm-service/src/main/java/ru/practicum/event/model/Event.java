@@ -50,7 +50,7 @@ public class Event {
     @ManyToOne(optional = false)
     Location location;
 
-    @Column(nullable = false)
+    @Column
     Boolean paid;
 
     @Column(name = "participant_limit")
