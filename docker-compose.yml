@@ -31,7 +31,7 @@ services:
     depends_on:
       - db-ewm
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-main:5432/ewm_service
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-ewm:5432/ewm_service
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=1234
 

@@ -41,16 +41,16 @@ public class CompilationController {
     }
 
     @GetMapping("/compilations")
-    public List<CompilationDto> getCompilations(@RequestParam(defaultValue = "true") Boolean pinned,
+    public List<CompilationDto> getCompilations(@RequestParam(defaultValue = "") String pinned,
                                                 @RequestParam(defaultValue = "0") Integer from,
                                                 @RequestParam(defaultValue = "10") Integer size) {
-        log.info("Запрос: Получение подборок событий");
+        log.info("Получение подборок событий");
         return compilationService.getCompilations(pinned, from, size);
     }
 
     @GetMapping("/compilations/{compId}")
     public CompilationDto getCompilationById(@PathVariable Long compId) {
-        log.info("Запрос: Получение подборки событий по его id");
+        log.info("Получение подборки событий по его id");
         return compilationService.getCompilationById(compId);
     }
 }

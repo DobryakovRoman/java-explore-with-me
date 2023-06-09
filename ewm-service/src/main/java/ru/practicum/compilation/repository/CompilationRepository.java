@@ -12,4 +12,7 @@ public interface CompilationRepository extends JpaRepository<Compilation, Long> 
     @Query("SELECT c FROM Compilation c " +
             "WHERE c.pinned = :pinned")
     List<Compilation> findAll(Boolean pinned, Pageable page);
+
+    @Query("SELECT c FROM Compilation c ")
+    List<Compilation> findAllPageable(Pageable page);
 }
