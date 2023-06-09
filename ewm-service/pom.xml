@@ -9,9 +9,9 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>main-service</artifactId>
+    <artifactId>ewm-service</artifactId>
 
-    <name>main-service</name>
+    <name>ewm-service</name>
 
     <dependencies>
         <dependency>

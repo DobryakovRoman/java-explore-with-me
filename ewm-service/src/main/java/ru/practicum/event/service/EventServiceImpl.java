@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class EventServiceImpl implements EventService {
-    private final UserRepository userRepository;
+    final UserRepository userRepository;
     final EventDtoMapper eventDtoMapper;
     final EventRepository eventRepository;
     final UserService userService;
