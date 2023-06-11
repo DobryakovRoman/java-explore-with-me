@@ -314,32 +314,33 @@ public class EventServiceImpl implements EventService {
         List<Event> events;
         LocalDateTime startDate;
         LocalDateTime endDate;
-        if (rangeStart == null) {
-            startDate = LocalDateTime.now();
+        if (rangeStart == null && rangeEnd == null && categories.size() > 0) {
+            events = eventRepository.findAllByCategoryIdPageable(categories, PageRequest.of(from / size, size));
         } else {
-            startDate = LocalDateTime.parse(rangeStart, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        }
-        if (text == null) {
-            text = "";
-        }
-        String requestURI = request.getRequestURI();
-        StringBuffer requestURL = request.getRequestURL();
-        if (categories.size() > 0 && !onlyAvailable && paid == null && text.isEmpty() && rangeStart == null && rangeEnd == null) {
-            //events = eventRepository.findAllByCategoryIdPageable(categories, PageRequest.of(from / size, size));
-            events = eventRepository.findEventList(categories, paid, PageRequest.of(from / size, size));
-        } else if (rangeEnd == null) {
-            events = eventRepository.findEventsByText(text.toLowerCase(), PageRequest.of(from / size, size));
-        } else {
-            endDate = LocalDateTime.parse(rangeEnd, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            if (startDate.isAfter(endDate)) {
-                throw new WrongDataException("Дата и время начала поиска не должна быть позже даты и времени конца поиска");
+            if (rangeStart == null) {
+                startDate = LocalDateTime.now();
+            } else {
+                startDate = LocalDateTime.parse(rangeStart, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             }
-            events = eventRepository.findAllByTextAndDateRange(text.toLowerCase(),
-                    startDate,
-                    endDate,
-                    PageRequest.of(from / size, size));
+            if (text == null) {
+                text = "";
+            }
+            String requestURI = request.getRequestURI();
+            StringBuffer requestURL = request.getRequestURL();
+            if (rangeEnd == null) {
+                events = eventRepository.findEventsByText(text.toLowerCase(), PageRequest.of(from / size, size));
+            } else {
+                endDate = LocalDateTime.parse(rangeEnd, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                if (startDate.isAfter(endDate)) {
+                    throw new WrongDataException("Дата и время начала поиска не должна быть позже даты и времени конца поиска");
+                } else {
+                    events = eventRepository.findAllByTextAndDateRange(text.toLowerCase(),
+                            startDate,
+                            endDate,
+                            PageRequest.of(from / size, size));
+                }
+            }
         }
-
         events = events.stream()
                 .filter((event) -> EventState.PUBLISHED.equals(event.getState()))
                 .collect(Collectors.toList());

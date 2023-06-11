@@ -32,27 +32,27 @@ public class CategoryController {
     public CategoryDto updateCategory(@PathVariable Long catId,
                                       @Valid @RequestBody CategoryDto categoryDto) {
 
-        log.info("Запрос: Изменение категории id=" + catId);
+        log.info("Изменение категории id=" + catId);
         return categoryService.updateCategory(catId, categoryDto);
     }
 
     @DeleteMapping("/admin/categories/{catId}")
     @ResponseStatus(value = HttpStatus.NO_CONTENT)
     public void deleteCategory(@PathVariable Long catId) {
-        log.info("Запрос: Удаление категории id=" + catId);
+        log.info("Удаление категории id=" + catId);
         categoryService.deleteCategoryById(catId);
     }
 
     @GetMapping("/categories")
     public List<CategoryDto> getCategories(@RequestParam(required = false, defaultValue = "0") Integer from,
                                            @RequestParam(required = false, defaultValue = "10") Integer size) {
-        log.info("Запрос: Получение категорий");
+        log.info("Получение категорий");
         return categoryService.getCategories(from, size);
     }
 
     @GetMapping("/categories/{catId}")
     public CategoryDto getCategoryById(@PathVariable Long catId) {
-        log.info("Запрос: Получение информации о категории по её идентификатору");
+        log.info("Получение информации о категории по её идентификатору");
         return categoryService.getCategoryById(catId);
     }
 }

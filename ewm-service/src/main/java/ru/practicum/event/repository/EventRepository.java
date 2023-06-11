@@ -50,7 +50,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findAllByCategoryId(Long catId);
 
     @Query("SELECT event FROM Event event " +
-            "WHERE event.category.id in :categories ")
+            "WHERE event.category.id in :categories " +
+            "ORDER BY event.eventDate DESC")
     List<Event> findAllByCategoryIdPageable(List<Long> categories, Pageable page);
 
     @Query("SELECT DISTINCT e FROM Event e " +
@@ -58,4 +59,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "AND (:paid IS NULL OR e.paid = :paid) " +
             "ORDER BY e.eventDate DESC")
     List<Event> findEventList(List<Long> categories, Boolean paid, Pageable page);
+
+
 }
