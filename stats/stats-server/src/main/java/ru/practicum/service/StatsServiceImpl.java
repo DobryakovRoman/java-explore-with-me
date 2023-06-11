@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.EndpointHitDto;
 import ru.practicum.StatsDto;
+import ru.practicum.exception.BadRequestException;
+import ru.practicum.model.Stats;
 import ru.practicum.repository.StatsRepository;
 
 import java.time.LocalDateTime;
@@ -26,6 +28,9 @@ public class StatsServiceImpl implements StatsService {
     }
 
     public List<StatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
+        if (start.isAfter(end)) {
+            throw new BadRequestException("Дата и время начала не должна быть позже даты и времени конца");
+        }
         if (unique) {
             if (uris != null) {
                 return statsRepository.findUniqueStats(start, end, uris).stream()
@@ -37,7 +42,8 @@ public class StatsServiceImpl implements StatsService {
                     .collect(Collectors.toList());
         }
         if (uris != null) {
-            return statsRepository.findStats(start, end, uris).stream()
+            List<Stats> stats = statsRepository.findStats(start, end, uris);
+            return stats.stream()
                     .map(DtoMapper::toStatsDto)
                     .collect(Collectors.toList());
         }

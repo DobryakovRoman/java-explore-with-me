@@ -314,7 +314,7 @@ public class EventServiceImpl implements EventService {
         List<Event> events;
         LocalDateTime startDate;
         LocalDateTime endDate;
-        if (rangeStart == null && rangeEnd == null && categories.size() > 0) {
+        if (rangeStart == null && rangeEnd == null && categories != null) {
             events = eventRepository.findAllByCategoryIdPageable(categories, PageRequest.of(from / size, size));
         } else {
             if (rangeStart == null) {
