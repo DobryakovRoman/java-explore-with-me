@@ -103,14 +103,10 @@ public class EventServiceImpl implements EventService {
         }
         List<EventFullDto> dtos;
         if (users == null && categories == null) {
-            //users = userRepository.findAll().stream().map((e) -> e.getId()).collect(Collectors.toList());
             dtos = eventRepository.findEventsByDefault(PageRequest.of(from / size, size)).stream()
                     .map(eventDtoMapper::mapEventToFullDto)
                     .collect(Collectors.toList());
         } else {
-//        if (categories == null) {
-//            categories = categoryRepository.findAll().stream().map((e) -> e.getId()).collect(Collectors.toList());
-//        }
             dtos = eventRepository.findAllEventsWithDates(users, eventStateList, categories, rangeStartDateTime, rangeEndDateTime, PageRequest.of(from / size, size)).stream()
                     .map(eventDtoMapper::mapEventToFullDto)
                     .collect(Collectors.toList());
@@ -144,11 +140,6 @@ public class EventServiceImpl implements EventService {
         return getViewsCounter(eventFullDto);
     }
 
-    void saveLocation(Event event) {
-        event.setLocation(locationRepository.save(event.getLocation()));
-        log.info("Локация сохранена " + event.getLocation().getId());
-    }
-
     @Override
     public List<EventShortDto> getEventsByUser(Long userId, Integer from, Integer size) {
         User user = userService.getUserById(userId);
@@ -156,7 +147,6 @@ public class EventServiceImpl implements EventService {
                 .map(eventDtoMapper::mapEventToShortDto)
                 .collect(Collectors.toList());
     }
-
 
     @Override
     public EventFullDto getEventOfUserByIds(Long userId, Long eventId) {
@@ -167,11 +157,6 @@ public class EventServiceImpl implements EventService {
         }
         EventFullDto eventFullDto = eventDtoMapper.mapEventToFullDto(event);
         return getViewsCounter(eventFullDto);
-    }
-
-    Event getEventById(Long eventId) {
-        return eventRepository.findById(eventId).orElseThrow(
-                () -> new NotFoundException("Событие " + eventId + " не найдено"));
     }
 
     @Override
@@ -200,6 +185,60 @@ public class EventServiceImpl implements EventService {
         }
         EventFullDto eventFullDto = eventDtoMapper.mapEventToFullDto(event);
         return getViewsCounter(eventFullDto);
+    }
+
+    @Override
+    public List<EventShortDto> getEventsWithFilters(String text,
+                                                    List<Long> categories,
+                                                    Boolean paid,
+                                                    String rangeStart,
+                                                    String rangeEnd,
+                                                    Boolean onlyAvailable,
+                                                    String sort,
+                                                    Integer from,
+                                                    Integer size,
+                                                    HttpServletRequest request) {
+        List<Event> events;
+        LocalDateTime startDate;
+        LocalDateTime endDate;
+        if (rangeStart == null && rangeEnd == null && categories != null) {
+            events = eventRepository.findAllByCategoryIdPageable(categories, PageRequest.of(from / size, size));
+        } else {
+            if (rangeStart == null) {
+                startDate = LocalDateTime.now();
+            } else {
+                startDate = LocalDateTime.parse(rangeStart, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            }
+            if (text == null) {
+                text = "";
+            }
+            if (rangeEnd == null) {
+                events = eventRepository.findEventsByText(text.toLowerCase(), PageRequest.of(from / size, size));
+            } else {
+                endDate = LocalDateTime.parse(rangeEnd, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                if (startDate.isAfter(endDate)) {
+                    throw new WrongDataException("Дата и время начала поиска не должна быть позже даты и времени конца поиска");
+                } else {
+                    events = eventRepository.findAllByTextAndDateRange(text.toLowerCase(),
+                            startDate,
+                            endDate,
+                            PageRequest.of(from / size, size));
+                }
+            }
+        }
+        events = events.stream()
+                .filter((event) -> EventState.PUBLISHED.equals(event.getState()))
+                .collect(Collectors.toList());
+        statsClient.saveHit(new EndpointHitDto("ewm-service",
+                request.getRequestURI(),
+                request.getRemoteAddr(),
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
+        return createShortEventDtos(events);
+    }
+
+    Event getEventById(Long eventId) {
+        return eventRepository.findById(eventId).orElseThrow(
+                () -> new NotFoundException("Событие " + eventId + " не найдено"));
     }
 
     Event updateEventWithUserRequest(Event event, UpdateEventUserRequest updateRequest) {
@@ -300,55 +339,9 @@ public class EventServiceImpl implements EventService {
         return event;
     }
 
-    @Override
-    public List<EventShortDto> getEventsWithFilters(String text,
-                                                    List<Long> categories,
-                                                    Boolean paid,
-                                                    String rangeStart,
-                                                    String rangeEnd,
-                                                    Boolean onlyAvailable,
-                                                    String sort,
-                                                    Integer from,
-                                                    Integer size,
-                                                    HttpServletRequest request) {
-        List<Event> events;
-        LocalDateTime startDate;
-        LocalDateTime endDate;
-        if (rangeStart == null && rangeEnd == null && categories != null) {
-            events = eventRepository.findAllByCategoryIdPageable(categories, PageRequest.of(from / size, size));
-        } else {
-            if (rangeStart == null) {
-                startDate = LocalDateTime.now();
-            } else {
-                startDate = LocalDateTime.parse(rangeStart, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            }
-            if (text == null) {
-                text = "";
-            }
-            String requestURI = request.getRequestURI();
-            StringBuffer requestURL = request.getRequestURL();
-            if (rangeEnd == null) {
-                events = eventRepository.findEventsByText(text.toLowerCase(), PageRequest.of(from / size, size));
-            } else {
-                endDate = LocalDateTime.parse(rangeEnd, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                if (startDate.isAfter(endDate)) {
-                    throw new WrongDataException("Дата и время начала поиска не должна быть позже даты и времени конца поиска");
-                } else {
-                    events = eventRepository.findAllByTextAndDateRange(text.toLowerCase(),
-                            startDate,
-                            endDate,
-                            PageRequest.of(from / size, size));
-                }
-            }
-        }
-        events = events.stream()
-                .filter((event) -> EventState.PUBLISHED.equals(event.getState()))
-                .collect(Collectors.toList());
-        statsClient.saveHit(new EndpointHitDto("ewm-service",
-                request.getRequestURI(),
-                request.getRemoteAddr(),
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
-        return createShortEventDtos(events);
+    void saveLocation(Event event) {
+        event.setLocation(locationRepository.save(event.getLocation()));
+        log.info("Локация сохранена " + event.getLocation().getId());
     }
 
     List<EventShortDto> createShortEventDtos(List<Event> events) {
@@ -380,9 +373,6 @@ public class EventServiceImpl implements EventService {
     }
 
     List<EventFullDto> getViewCounters(List<EventFullDto> dtos) {
-        for (EventFullDto dto : dtos) {
-            getViewsCounter(dto);
-        }
-        return dtos;
+        return dtos.stream().map(this::getViewsCounter).collect(Collectors.toList());
     }
 }

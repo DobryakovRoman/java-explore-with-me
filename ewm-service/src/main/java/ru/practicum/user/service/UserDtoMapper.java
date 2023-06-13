@@ -9,7 +9,7 @@ import ru.practicum.user.model.User;
 @Component
 public class UserDtoMapper {
 
-    public UserDto mapUserToDto(User user) {
+    public static UserDto mapUserToDto(User user) {
         return new UserDto(
                 user.getId(),
                 user.getEmail(),
@@ -17,7 +17,7 @@ public class UserDtoMapper {
         );
     }
 
-    public UserShortDto mapUserToShortDto(User user) {
+    public static UserShortDto mapUserToShortDto(User user) {
         if (user.getId() == null) {
             return UserShortDto.builder()
                     .id(null)
@@ -35,7 +35,7 @@ public class UserDtoMapper {
         );
     }
 
-    public User mapNewUserRequestToUser(NewUserRequest newUser) {
+    public static User mapNewUserRequestToUser(NewUserRequest newUser) {
         return new User(
                 null,
                 newUser.getEmail(),

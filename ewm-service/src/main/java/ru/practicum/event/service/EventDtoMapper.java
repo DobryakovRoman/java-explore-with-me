@@ -12,15 +12,12 @@ import ru.practicum.event.model.Event;
 import ru.practicum.event.model.EventState;
 import ru.practicum.user.service.UserDtoMapper;
 
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Component
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class EventDtoMapper {
     final String dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
-    final CategoryDtoMapper categoryDtoMapper = new CategoryDtoMapper();
-    final UserDtoMapper userDtoMapper = new UserDtoMapper();
 
     public EventFullDto mapEventToFullDto(Event event) {
         if (event.getState() == null) {
@@ -32,12 +29,12 @@ public class EventDtoMapper {
         return EventFullDto.builder()
                 .id(event.getId())
                 .annotation(event.getAnnotation())
-                .category(categoryDtoMapper.mapCategoryToDto(event.getCategory()))
+                .category(CategoryDtoMapper.mapCategoryToDto(event.getCategory()))
                 .confirmedRequests(event.getConfirmedRequests())
                 .createdOn(event.getCreatedOn().format(DateTimeFormatter.ofPattern(dateTimeFormat)))
                 .description(event.getDescription())
-                .eventDate(event.getEventDate().format(DateTimeFormatter.ofPattern(dateTimeFormat)))
-                .initiator(userDtoMapper.mapUserToShortDto(event.getInitiator()))
+                .eventDate(event.getEventDate())
+                .initiator(UserDtoMapper.mapUserToShortDto(event.getInitiator()))
                 .location(event.getLocation())
                 .paid(event.getPaid())
                 .participantLimit(event.getParticipantLimit())
@@ -52,11 +49,11 @@ public class EventDtoMapper {
         return EventShortDto.builder()
                 .annotation(event.getAnnotation())
                 .title(event.getTitle())
-                .category(categoryDtoMapper.mapCategoryToDto(event.getCategory()))
-                .initiator(userDtoMapper.mapUserToShortDto(event.getInitiator()))
+                .category(CategoryDtoMapper.mapCategoryToDto(event.getCategory()))
+                .initiator(UserDtoMapper.mapUserToShortDto(event.getInitiator()))
                 .id(event.getId())
                 .paid(event.getPaid())
-                .eventDate(event.getEventDate().format(DateTimeFormatter.ofPattern(dateTimeFormat)))
+                .eventDate(event.getEventDate())
                 .build();
     }
 
@@ -65,7 +62,7 @@ public class EventDtoMapper {
                 .annotation(newEvent.getAnnotation())
                 .category(category)
                 .description(newEvent.getDescription())
-                .eventDate(LocalDateTime.parse(newEvent.getEventDate(), DateTimeFormatter.ofPattern(dateTimeFormat)))
+                .eventDate(newEvent.getEventDate())
                 .location(newEvent.getLocation())
                 .paid(newEvent.getPaid())
                 .participantLimit(newEvent.getParticipantLimit())

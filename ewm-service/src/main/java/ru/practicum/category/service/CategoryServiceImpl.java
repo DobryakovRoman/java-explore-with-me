@@ -34,9 +34,9 @@ public class CategoryServiceImpl implements CategoryService {
         if (categoryRepository.findByName(newCategoryRequestDto.getName()).size() > 0) {
             throw new ConflictException("Категория " + newCategoryRequestDto.getName() + " уже существует");
         }
-        Category category = categoryRepository.save(categoryDtoMapper.mapNewDtoToCategory(newCategoryRequestDto));
+        Category category = categoryRepository.save(CategoryDtoMapper.mapNewDtoToCategory(newCategoryRequestDto));
         log.info("Категория сохранена " + category.getId());
-        return categoryDtoMapper.mapCategoryToDto(category);
+        return CategoryDtoMapper.mapCategoryToDto(category);
     }
 
     @Override
@@ -58,8 +58,6 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = categoryRepository.findById(catId).orElseThrow(
                 () -> new NotFoundException("Категория " + catId + " не найдена")
         );
-        //в условии исправить ошибку. Если обновляется то же самое название на само себя, то ОК
-        //Если чужое название обновляется на существующее, то conflict
         List<Category> byName = categoryRepository.findByName(categoryDto.getName());
         Long id = null;
         if (byName.size() > 0) {
@@ -69,18 +67,15 @@ public class CategoryServiceImpl implements CategoryService {
                     .orElseThrow(
                             () -> new ConflictException("Название категории " + categoryDto.getName() + " уже существует")
                     ).getId();
-            if (!catId.equals(id)) {
-                throw new ConflictException("Название категории " + categoryDto.getName() + " уже существует");
-            }
         }
         category.setName(categoryDto.getName());
-        return categoryDtoMapper.mapCategoryToDto(category);
+        return CategoryDtoMapper.mapCategoryToDto(category);
     }
 
     @Override
     public List<CategoryDto> getCategories(Integer from, Integer size) {
         return categoryRepository.findAll(PageRequest.of(from / size, size)).stream()
-                .map(categoryDtoMapper::mapCategoryToDto)
+                .map(CategoryDtoMapper::mapCategoryToDto)
                 .collect(Collectors.toList());
     }
 
@@ -88,6 +83,6 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryDto getCategoryById(Long catId) {
         Category category = categoryRepository.findById(catId).orElseThrow(
                 () -> new NotFoundException("Категория " + catId + " не найдена"));
-        return categoryDtoMapper.mapCategoryToDto(category);
+        return CategoryDtoMapper.mapCategoryToDto(category);
     }
 }

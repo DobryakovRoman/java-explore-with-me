@@ -1,5 +1,7 @@
 package ru.practicum.compilation.service;
 
+import lombok.AllArgsConstructor;
+import lombok.experimental.PackagePrivate;
 import org.springframework.stereotype.Component;
 import ru.practicum.compilation.dto.CompilationDto;
 import ru.practicum.compilation.dto.NewCompilationDto;
@@ -10,8 +12,10 @@ import ru.practicum.event.service.EventDtoMapper;
 import java.util.List;
 
 @Component
+@AllArgsConstructor
+@PackagePrivate
 public class CompilationDtoMapper {
-    private final EventDtoMapper eventDtoMapper = new EventDtoMapper();
+    final EventDtoMapper eventDtoMapper;
 
     public Compilation mapNewCompilationDtoToCompilation(NewCompilationDto dto, List<Event> events) {
         return Compilation.builder()

@@ -23,17 +23,16 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
 
     final UserRepository userRepository;
-    final UserDtoMapper userDtoMapper;
 
     @Override
     public List<UserDto> getUsers(List<Long> ids, Integer from, Integer size) {
         if (ids == null) {
             return userRepository.findAllPageable(PageRequest.of(from / size, size)).stream()
-                    .map(userDtoMapper::mapUserToDto)
+                    .map(UserDtoMapper::mapUserToDto)
                     .collect(Collectors.toList());
         }
         return userRepository.findAllByIdsPageable(ids, PageRequest.of(from / size, size)).stream()
-                .map(userDtoMapper::mapUserToDto)
+                .map(UserDtoMapper::mapUserToDto)
                 .collect(Collectors.toList());
     }
 
@@ -48,9 +47,9 @@ public class UserServiceImpl implements UserService {
         if (userRepository.findByName(newUserDto.getName()).size() > 0) {
             throw new ConflictException("Пользователь " + newUserDto.getName() + " уже существует");
         }
-        User savedUser = userRepository.save(userDtoMapper.mapNewUserRequestToUser(newUserDto));
+        User savedUser = userRepository.save(UserDtoMapper.mapNewUserRequestToUser(newUserDto));
         log.info("Пользователь создан, " + savedUser.getId());
-        return userDtoMapper.mapUserToDto(savedUser);
+        return UserDtoMapper.mapUserToDto(savedUser);
     }
 
     @Override

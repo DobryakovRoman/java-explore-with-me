@@ -48,8 +48,9 @@ public class CompilationServiceImpl implements CompilationService {
     public CompilationDto updateCompilation(Long compId, UpdateCompilationRequest compilationDto) {
         Compilation compilation = compilationRepository.findById(compId).orElseThrow(
                 () -> new NotFoundException("Подборка не существует " + compId));
-        List<Event> events = eventRepository.findEventsByIds(compilationDto.getEvents());
+        List<Event> events;
         if (compilationDto.getEvents() != null) {
+            events = eventRepository.findEventsByIds(compilationDto.getEvents());
             compilation.setEvents(events);
         }
         if (compilationDto.getTitle() != null) {
@@ -79,10 +80,10 @@ public class CompilationServiceImpl implements CompilationService {
     public List<CompilationDto> getCompilations(String pinned, Integer from, Integer size) {
         List<Compilation> compilations;
         if (pinned.isEmpty()) {
-            compilations = compilationRepository.findAllPageable(PageRequest.of(from / size, size));
+            compilations = compilationRepository.findAll(PageRequest.of(from / size, size)).getContent();
         } else {
             Boolean pin = Boolean.parseBoolean(pinned);
-            compilations = compilationRepository.findAll(pin, PageRequest.of(from / size, size));
+            compilations = compilationRepository.findAllByPinned(pin, PageRequest.of(from / size, size));
         }
         List<CompilationDto> compilationDtos = new ArrayList<>();
         for (Compilation compilation : compilations) {
