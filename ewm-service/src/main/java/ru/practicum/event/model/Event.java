@@ -33,8 +33,6 @@ public class Event {
             inverseJoinColumns = @JoinColumn(name = "category_id"))
     Category category;
 
-    Long confirmedRequests;
-
     @Column(name = "created_on")
     LocalDateTime createdOn;
 

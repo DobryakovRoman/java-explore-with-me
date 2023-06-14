@@ -2,7 +2,6 @@ package ru.practicum.event.service;
 
 import ru.practicum.event.dto.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 public interface EventService {
@@ -14,7 +13,7 @@ public interface EventService {
 
     EventFullDto addEvent(Long userId, NewEventDto newEvent);
 
-    EventFullDto getEventDtoById(Long eventId, HttpServletRequest request);
+    EventFullDto getEventDtoById(Long eventId, String uri, String ip);
 
     EventFullDto getEventOfUserByIds(Long userId, Long eventId);
 
@@ -29,5 +28,6 @@ public interface EventService {
                                              String sort,
                                              Integer from,
                                              Integer size,
-                                             HttpServletRequest request);
+                                             String uri,
+                                             String ip);
 }

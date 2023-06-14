@@ -17,20 +17,17 @@ import java.time.format.DateTimeFormatter;
 @Component
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class EventDtoMapper {
-    final String dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
+    final static String dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
 
-    public EventFullDto mapEventToFullDto(Event event) {
+    public static EventFullDto mapEventToFullDto(Event event, Integer confirmed) {
         if (event.getState() == null) {
             event.setState(EventState.PENDING);
-        }
-        if (event.getConfirmedRequests() == null) {
-            event.setConfirmedRequests(0L);
         }
         return EventFullDto.builder()
                 .id(event.getId())
                 .annotation(event.getAnnotation())
                 .category(CategoryDtoMapper.mapCategoryToDto(event.getCategory()))
-                .confirmedRequests(event.getConfirmedRequests())
+                .confirmedRequests(confirmed)
                 .createdOn(event.getCreatedOn().format(DateTimeFormatter.ofPattern(dateTimeFormat)))
                 .description(event.getDescription())
                 .eventDate(event.getEventDate())
@@ -45,7 +42,7 @@ public class EventDtoMapper {
                 .build();
     }
 
-    public EventShortDto mapEventToShortDto(Event event) {
+    public static EventShortDto mapEventToShortDto(Event event) {
         return EventShortDto.builder()
                 .annotation(event.getAnnotation())
                 .title(event.getTitle())
@@ -57,7 +54,7 @@ public class EventDtoMapper {
                 .build();
     }
 
-    public Event mapNewEventDtoToEvent(NewEventDto newEvent, Category category) {
+    public static Event mapNewEventDtoToEvent(NewEventDto newEvent, Category category) {
         return Event.builder()
                 .annotation(newEvent.getAnnotation())
                 .category(category)
@@ -71,7 +68,7 @@ public class EventDtoMapper {
                 .build();
     }
 
-    String checkPublishedOn(Event event) {
+    static String checkPublishedOn(Event event) {
         if (event.getPublishedOn() == null) {
             return null;
         }

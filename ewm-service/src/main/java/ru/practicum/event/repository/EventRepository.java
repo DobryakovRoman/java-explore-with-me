@@ -1,5 +1,6 @@
 package ru.practicum.event.repository;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,9 +12,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
-    @Query("SELECT event FROM Event event " +
-            "WHERE event.id in :events")
-    List<Event> findEventsByIds(List<Long> events);
+
+    List<Event> findAllByIdIn(List<Long> ids);
 
     @Query("SELECT event FROM Event event WHERE event.initiator.id IN :users " +
             "AND event.state in :states " +
@@ -27,11 +27,9 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                        LocalDateTime rangeEnd,
                                        Pageable page);
 
-    @Query("SELECT event FROM Event event ")
-    List<Event> findEventsByDefault(Pageable page);
+    Page<Event> findAll(Pageable page);
 
-    @Query("SELECT event FROM Event event WHERE event.initiator in :user")
-    List<Event> findAllByUserId(User user, Pageable page);
+    List<Event> findAllByInitiator(User user, Pageable page);
 
     @Query("SELECT event FROM Event event " +
             "WHERE (lower(event.annotation) LIKE %:text% " +
@@ -54,11 +52,14 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "ORDER BY event.eventDate DESC")
     List<Event> findAllByCategoryIdPageable(List<Long> categories, Pageable page);
 
-    @Query("SELECT DISTINCT e FROM Event e " +
-            "WHERE (:categories IS NULL OR e.category.id IN :categories) " +
-            "AND (:paid IS NULL OR e.paid = :paid) " +
-            "ORDER BY e.eventDate DESC")
-    List<Event> findEventList(List<Long> categories, Boolean paid, Pageable page);
+    @Query("SELECT DISTINCT event FROM Event event " +
+            "WHERE (event.annotation LIKE COALESCE(:text, event.annotation) OR event.description LIKE COALESCE(:text, event.description)) " +
+            "AND (:categories IS NULL OR event.category.id IN :categories) " +
+            "AND (:paid IS NULL OR event.paid = :paid) " +
+            "AND event.eventDate >= COALESCE(:rangeStart, event.eventDate) " +
+            "AND event.eventDate <= COALESCE(:rangeEnd, event.eventDate) " +
+            "ORDER BY event.eventDate DESC")
+    List<Event> findEventList(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart, LocalDateTime rangeEnd);
 
 
 }

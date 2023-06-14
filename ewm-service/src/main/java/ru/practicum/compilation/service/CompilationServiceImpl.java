@@ -28,11 +28,15 @@ public class CompilationServiceImpl implements CompilationService {
     final CompilationRepository compilationRepository;
     final CompilationDtoMapper compilationDtoMapper;
     final EventRepository eventRepository;
-    final EventDtoMapper eventDtoMapper;
 
     @Override
     public CompilationDto addCompilation(NewCompilationDto compilationDto) {
-        List<Event> events = eventRepository.findEventsByIds(compilationDto.getEvents());
+        List<Event> events;
+        if (compilationDto.getEvents() != null) {
+            events = eventRepository.findAllByIdIn(compilationDto.getEvents());
+        } else {
+            events = new ArrayList<>();
+        }
         Compilation compilation = compilationDtoMapper.mapNewCompilationDtoToCompilation(compilationDto, events);
         if (compilation.getPinned() == null) {
             compilation.setPinned(false);
@@ -40,7 +44,7 @@ public class CompilationServiceImpl implements CompilationService {
         compilation = compilationRepository.save(compilation);
         log.info("Подборка сохранена " + compilation.getId());
         CompilationDto result = compilationDtoMapper.mapCompilationToDto(compilation);
-        result.setEvents(compilation.getEvents().stream().map(eventDtoMapper::mapEventToShortDto).collect(Collectors.toList()));
+        result.setEvents(compilation.getEvents().stream().map(EventDtoMapper::mapEventToShortDto).collect(Collectors.toList()));
         return result;
     }
 
@@ -50,7 +54,7 @@ public class CompilationServiceImpl implements CompilationService {
                 () -> new NotFoundException("Подборка не существует " + compId));
         List<Event> events;
         if (compilationDto.getEvents() != null) {
-            events = eventRepository.findEventsByIds(compilationDto.getEvents());
+            events = eventRepository.findAllByIdIn(compilationDto.getEvents());
             compilation.setEvents(events);
         }
         if (compilationDto.getTitle() != null) {
@@ -63,7 +67,7 @@ public class CompilationServiceImpl implements CompilationService {
         log.info("Подборка обновлена " + compId);
         CompilationDto result = compilationDtoMapper.mapCompilationToDto(compilation);
         result.setEvents(compilation.getEvents().stream()
-                .map(eventDtoMapper::mapEventToShortDto)
+                .map(EventDtoMapper::mapEventToShortDto)
                 .collect(Collectors.toList()));
         return result;
     }
@@ -89,7 +93,7 @@ public class CompilationServiceImpl implements CompilationService {
         for (Compilation compilation : compilations) {
             CompilationDto dto = compilationDtoMapper.mapCompilationToDto(compilation);
             dto.setEvents(compilation.getEvents().stream()
-                    .map(eventDtoMapper::mapEventToShortDto)
+                    .map(EventDtoMapper::mapEventToShortDto)
                     .collect(Collectors.toList()));
             compilationDtos.add(dto);
         }
@@ -103,7 +107,7 @@ public class CompilationServiceImpl implements CompilationService {
         );
         CompilationDto result = compilationDtoMapper.mapCompilationToDto(compilation);
         result.setEvents(compilation.getEvents().stream()
-                .map(eventDtoMapper::mapEventToShortDto)
+                .map(EventDtoMapper::mapEventToShortDto)
                 .collect(Collectors.toList()));
         log.info("Подборка не найдена " + compId);
         return result;

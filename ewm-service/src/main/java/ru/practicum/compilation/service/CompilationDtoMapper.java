@@ -7,7 +7,6 @@ import ru.practicum.compilation.dto.CompilationDto;
 import ru.practicum.compilation.dto.NewCompilationDto;
 import ru.practicum.compilation.model.Compilation;
 import ru.practicum.event.model.Event;
-import ru.practicum.event.service.EventDtoMapper;
 
 import java.util.List;
 
@@ -15,7 +14,6 @@ import java.util.List;
 @AllArgsConstructor
 @PackagePrivate
 public class CompilationDtoMapper {
-    final EventDtoMapper eventDtoMapper;
 
     public Compilation mapNewCompilationDtoToCompilation(NewCompilationDto dto, List<Event> events) {
         return Compilation.builder()
