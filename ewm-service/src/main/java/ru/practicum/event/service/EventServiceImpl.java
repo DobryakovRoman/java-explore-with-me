@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ru.practicum.EndpointHitDto;
 import ru.practicum.StatsClient;
+import ru.practicum.StatsDto;
 import ru.practicum.category.model.Category;
 import ru.practicum.category.repository.CategoryRepository;
 import ru.practicum.event.dto.*;
@@ -267,6 +268,54 @@ public class EventServiceImpl implements EventService {
         return createShortEventDtos(events);
     }
 
+    List<EventShortDto> createShortEventDtos(List<Event> events) {
+        HashMap<Long, Integer> eventIdsWithViewsCounter = new HashMap<>();
+
+        LocalDateTime lowLocalDateTime = events.get(0).getCreatedOn();
+        List<String> uris = new ArrayList<>();
+        for (Event event : events) {
+            uris.add("/events/" + event.getId().toString());
+            if (lowLocalDateTime.isAfter(event.getCreatedOn())) {
+                lowLocalDateTime = event.getCreatedOn();
+            }
+        }
+        List<StatsDto> viewsCounter = getViewsCounter(uris, lowLocalDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        for (StatsDto statsDto : viewsCounter) {
+            String[] split = statsDto.getUri().split("/");
+            eventIdsWithViewsCounter.put(Long.parseLong(split[2]), Math.toIntExact(statsDto.getHits()));
+        }
+
+        List<ParticipationRequest> requests = requestRepository.findByEventIds(new ArrayList<>(eventIdsWithViewsCounter.keySet()));
+        List<EventShortDto> dtos = events.stream()
+                .map(EventDtoMapper::mapEventToShortDto)
+                .collect(Collectors.toList());
+
+        for (EventShortDto dto : dtos) {
+            dto.setConfirmedRequests(requestRepository.countByEventAndStatuses(dto.getId(), List.of("CONFIRMED")));
+            dto.setViews(eventIdsWithViewsCounter.get(dto.getId()));
+        }
+        return dtos;
+    }
+
+    EventFullDto getViewsCounter(EventFullDto eventFullDto) {
+        Integer views = statsClient.getStats(eventFullDto.getCreatedOn(),
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
+                List.of("/events/" + eventFullDto.getId()), true).size();
+        eventFullDto.setViews(views);
+        return eventFullDto;
+    }
+
+    List<StatsDto> getViewsCounter(List<String> uris, String CreatedOn) {
+        List<StatsDto> viewsForUris = statsClient.getStats(CreatedOn,
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
+                uris, true);
+        return viewsForUris;
+    }
+
+    List<EventFullDto> getViewCounters(List<EventFullDto> dtos) {
+        return dtos.stream().map(this::getViewsCounter).collect(Collectors.toList());
+    }
+
     EventFullDto getEventFullDto(Event event) {
         Integer confirmed = requestRepository.findRequestByEventIdAndStatus(event.getId(), "CONFIRMED").size();
         return EventDtoMapper.mapEventToFullDto(event, confirmed);
@@ -380,32 +429,5 @@ public class EventServiceImpl implements EventService {
         log.info("Локация сохранена " + event.getLocation().getId());
     }
 
-    List<EventShortDto> createShortEventDtos(List<Event> events) {
-        HashMap<Long, Integer> eventIdsWithViewsCounter = new HashMap<>();
-        for (Event event : events) {
-            eventIdsWithViewsCounter.put(event.getId(), getViewsCounter(getEventFullDto(event)).getViews());
-        }
-        List<ParticipationRequest> requests = requestRepository.findByEventIds(new ArrayList<>(eventIdsWithViewsCounter.keySet()));
-        List<EventShortDto> dtos = events.stream()
-                .map(EventDtoMapper::mapEventToShortDto)
-                .collect(Collectors.toList());
 
-        for (EventShortDto dto : dtos) {
-            dto.setConfirmedRequests(requestRepository.countByEventAndStatuses(dto.getId(), List.of("CONFIRMED")));
-            dto.setViews(eventIdsWithViewsCounter.get(dto.getId()));
-        }
-        return dtos;
-    }
-
-    EventFullDto getViewsCounter(EventFullDto eventFullDto) {
-        Integer views = statsClient.getStats(eventFullDto.getCreatedOn(),
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
-                List.of("/events/" + eventFullDto.getId()), true).size();
-        eventFullDto.setViews(views);
-        return eventFullDto;
-    }
-
-    List<EventFullDto> getViewCounters(List<EventFullDto> dtos) {
-        return dtos.stream().map(this::getViewsCounter).collect(Collectors.toList());
-    }
 }
