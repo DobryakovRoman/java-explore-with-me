@@ -17,7 +17,7 @@ import java.time.format.DateTimeFormatter;
 @Component
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class EventDtoMapper {
-    final static String dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
+    static final String dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
 
     public static EventFullDto mapEventToFullDto(Event event, Integer confirmed) {
         if (event.getState() == null) {
