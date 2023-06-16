@@ -19,7 +19,7 @@ import java.time.format.DateTimeFormatter;
 public class EventDtoMapper {
     static final String dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
 
-    public static EventFullDto mapEventToFullDto(Event event, Integer confirmed) {
+    public static EventFullDto mapEventToFullDto(Event event, Long confirmed) {
         if (event.getState() == null) {
             event.setState(EventState.PENDING);
         }

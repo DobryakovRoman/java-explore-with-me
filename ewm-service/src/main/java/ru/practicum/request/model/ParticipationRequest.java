@@ -3,6 +3,7 @@ package ru.practicum.request.model;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import ru.practicum.event.model.Event;
+import ru.practicum.user.model.User;
 
 import javax.persistence.*;
 
@@ -24,7 +25,8 @@ public class ParticipationRequest {
     @ManyToOne
     Event event;
 
-    Long requester;
+    @ManyToOne
+    User requester;
 
     String status;
 }

@@ -23,7 +23,7 @@ public class EventController {
 
     final EventService eventService;
 
-    HttpServletRequest request;
+    final HttpServletRequest request;
 
     @GetMapping("/admin/events")
     public List<EventFullDto> getEvents(@RequestParam(required = false) List<Long> users,

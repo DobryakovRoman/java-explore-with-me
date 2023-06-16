@@ -89,14 +89,20 @@ public class CompilationServiceImpl implements CompilationService {
             Boolean pin = Boolean.parseBoolean(pinned);
             compilations = compilationRepository.findAllByPinned(pin, PageRequest.of(from / size, size));
         }
-        List<CompilationDto> compilationDtos = new ArrayList<>();
-        for (Compilation compilation : compilations) {
-            CompilationDto dto = compilationDtoMapper.mapCompilationToDto(compilation);
-            dto.setEvents(compilation.getEvents().stream()
-                    .map(EventDtoMapper::mapEventToShortDto)
-                    .collect(Collectors.toList()));
-            compilationDtos.add(dto);
-        }
+        List<CompilationDto> compilationDtos = compilations.stream()
+                .map(compilationDtoMapper::mapCompilationToDto)
+                .peek(cdto -> cdto.setEvents(
+                                compilations.stream()
+                                        .filter(c -> cdto.getId().equals(c.getId()))
+                                        .findFirst()
+                                        .get()
+                                        .getEvents()
+                                        .stream()
+                                        .map(EventDtoMapper::mapEventToShortDto)
+                                        .collect(Collectors.toList())
+                        )
+                )
+                .collect(Collectors.toList());
         return compilationDtos;
     }
 

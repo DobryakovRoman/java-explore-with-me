@@ -53,10 +53,16 @@ public class RequestServiceImpl implements RequestService {
         List<ParticipationRequestDto> rejectedRequests = new ArrayList<>();
         Event event = getEventById(eventId);
         List<ParticipationRequest> requests = getParticipationRequestsByEventId(eventId);
+        Long confirmedRequestsCounter = requests.stream().filter(r -> r.getStatus().equals("CONFIRMED")).count();
+        List<ParticipationRequest> result = new ArrayList<>();
         for (ParticipationRequest request : requests) {
             if (request.getStatus().equals("CONFIRMED") || request.getStatus().equals("REJECTED") || request.getStatus().equals("PENDING")) {
                 if (updateRequest.getStatus().equals("CONFIRMED") && event.getParticipantLimit() != 0) {
-                    if (!checkForParticipantLimit(event)) {
+                    if (event.getParticipantLimit() < confirmedRequestsCounter) {
+                        List<ParticipationRequest> pending = requestRepository.findRequestByEventIdAndStatus(event.getId(), "PENDING").stream()
+                                .peek(p -> p.setStatus("REJECTED"))
+                                .collect(Collectors.toList());
+                        requestRepository.saveAll(pending);
                         log.info("Слишком много заявок на участие, оставшиеся заявки переведены в статус Reject");
                         throw new ConflictException("Слишком много заявок на участие, оставшиеся заявки переведены в статус Reject");
                     }
@@ -71,11 +77,13 @@ public class RequestServiceImpl implements RequestService {
                 } else if ("REJECTED".equals(participationRequestDto.getStatus())) {
                     rejectedRequests.add(participationRequestDto);
                 }
-                requestRepository.save(request);
+                result.add(request);
+                confirmedRequestsCounter++;
             } else {
                 throw new WrongDataException("Неверный статус запроса");
             }
         }
+        requestRepository.saveAll(result);
         return EventRequestStatusUpdateResultMapper.mapToEventRequestStatusUpdateResult(confirmedRequests, rejectedRequests);
     }
 
@@ -87,24 +95,59 @@ public class RequestServiceImpl implements RequestService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public ParticipationRequestDto addParticipationRequest(Long userId, Long eventId) {
+        User user = userService.getUserById(userId);
+        Event event = getEventById(eventId);
+        if (event.getInitiator().getId().equals(userId)) {
+            throw new ConflictException("Владелец не может подать заявку на участие в своём событии");
+        }
+        if (!event.getState().equals(EventState.PUBLISHED)) {
+            throw new ConflictException("Событие не опубликовано, заявка не подана");
+        }
+        List<ParticipationRequest> requests = getParticipationRequestsByEventId(event.getId());
+        if (participationLimitIsFull(event)) {
+            throw new ConflictException("Достигнут лимит заявок, заявка не подана");
+        }
+        for (ParticipationRequest request : requests) {
+            if (request.getRequester().getId().equals(userId)) {
+                throw new ConflictException("Оставить заявку повторно невозможно");
+            }
+        }
+
+        ParticipationRequest newRequest = ParticipationRequest.builder()
+                .requester(user)
+                .created(LocalDateTime.now().toString())
+                .status(event.getParticipantLimit() == 0 ? "CONFIRMED" : "PENDING")
+                .event(event)
+                .build();
+        if (event.getRequestModeration().equals(false)) {
+            newRequest.setStatus("ACCEPTED");
+        }
+        return requestDtoMapper.mapRequestToDto(requestRepository.save(newRequest));
+    }
+
+    @Override
+    public ParticipationRequestDto cancelParticipationRequest(Long userId, Long requestId) {
+        User user = userService.getUserById(userId);
+        ParticipationRequest request = requestRepository.findById(requestId).orElseThrow(
+                () -> new NotFoundException("Запрос " + requestId + " не существует")
+        );
+        if (!request.getRequester().getId().equals(userId)) {
+            throw new ConflictException("Заявка " + requestId + " оставлена не пользователем " + userId);
+        }
+        request.setStatus("CANCELED");
+        log.info("Отмена заявки на участие " + requestId);
+        return requestDtoMapper.mapRequestToDto(requestRepository.save(request));
+    }
+
+
     boolean participationLimitIsFull(Event event) {
         Long confirmedRequestsCounter = requestRepository.countByEventAndStatuses(event.getId(), List.of("CONFIRMED", "ACCEPTED"));
         if (event.getParticipantLimit() != 0 && event.getParticipantLimit() <= confirmedRequestsCounter) {
             throw new ConflictException("Слишком много заявок на участие");
         }
         return false;
-    }
-
-    Boolean checkForParticipantLimit(Event event) {
-        Long confirmedRequestsCounter = requestRepository.countByEventAndStatuses(event.getId(), List.of("CONFIRMED"));
-        if (event.getParticipantLimit() < confirmedRequestsCounter) {
-            for (ParticipationRequest request : requestRepository.findRequestByEventIdAndStatus(event.getId(), "PENDING")) {
-                request.setStatus("REJECTED");
-                requestRepository.save(request);
-            }
-            return false;
-        }
-        return true;
     }
 
     List<ParticipationRequest> getParticipationRequests(Long userId, Long eventId) {
@@ -124,52 +167,5 @@ public class RequestServiceImpl implements RequestService {
     Event getEventById(Long eventId) {
         return eventRepository.findById(eventId).orElseThrow(
                 () -> new NotFoundException("Событие " + eventId + " не найдено"));
-    }
-
-
-    @Override
-    public ParticipationRequestDto addParticipationRequest(Long userId, Long eventId) {
-        User user = userService.getUserById(userId);
-        Event event = getEventById(eventId);
-        if (event.getInitiator().getId().equals(userId)) {
-            throw new ConflictException("Владелец не может подать заявку на участие в своём событии");
-        }
-        if (!event.getState().equals(EventState.PUBLISHED)) {
-            throw new ConflictException("Событие не опубликовано, заявка не подана");
-        }
-        List<ParticipationRequest> requests = getParticipationRequestsByEventId(event.getId());
-        if (participationLimitIsFull(event)) {
-            throw new ConflictException("Достигнут лимит заявок, заявка не подана");
-        }
-        for (ParticipationRequest request : requests) {
-            if (request.getRequester().equals(userId)) {
-                throw new ConflictException("Оставить заявку повторно невозможно");
-            }
-        }
-
-        ParticipationRequest newRequest = ParticipationRequest.builder()
-                .requester(userId)
-                .created(LocalDateTime.now().toString())
-                .status(event.getParticipantLimit() == 0 ? "CONFIRMED" : "PENDING")
-                .event(event)
-                .build();
-        if (event.getRequestModeration().equals(false)) {
-            newRequest.setStatus("ACCEPTED");
-        }
-        return requestDtoMapper.mapRequestToDto(requestRepository.save(newRequest));
-    }
-
-    @Override
-    public ParticipationRequestDto cancelParticipationRequest(Long userId, Long requestId) {
-        User user = userService.getUserById(userId);
-        ParticipationRequest request = requestRepository.findById(requestId).orElseThrow(
-                () -> new NotFoundException("Запрос " + requestId + " не существует")
-        );
-        if (!request.getRequester().equals(userId)) {
-            throw new ConflictException("Заявка " + requestId + " оставлена не пользователем " + userId);
-        }
-        request.setStatus("CANCELED");
-        log.info("Отмена заявки на участие " + requestId);
-        return requestDtoMapper.mapRequestToDto(requestRepository.save(request));
     }
 }

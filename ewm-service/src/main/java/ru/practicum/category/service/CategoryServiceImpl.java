@@ -10,7 +10,6 @@ import ru.practicum.category.dto.CategoryDto;
 import ru.practicum.category.dto.NewCategoryRequestDto;
 import ru.practicum.category.model.Category;
 import ru.practicum.category.repository.CategoryRepository;
-import ru.practicum.event.model.Event;
 import ru.practicum.event.repository.EventRepository;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
@@ -26,12 +25,11 @@ import java.util.stream.Collectors;
 public class CategoryServiceImpl implements CategoryService {
 
     final CategoryRepository categoryRepository;
-    final CategoryDtoMapper categoryDtoMapper;
     final EventRepository eventRepository;
 
     @Override
     public CategoryDto addCategory(NewCategoryRequestDto newCategoryRequestDto) {
-        if (categoryRepository.findByName(newCategoryRequestDto.getName()).size() > 0) {
+        if (categoryRepository.existsByName(newCategoryRequestDto.getName())) {
             throw new ConflictException("Категория " + newCategoryRequestDto.getName() + " уже существует");
         }
         Category category = categoryRepository.save(CategoryDtoMapper.mapNewDtoToCategory(newCategoryRequestDto));
@@ -44,8 +42,7 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = categoryRepository.findById(catId).orElseThrow(
                 () -> new NotFoundException("Категория не существует " + catId)
         );
-        List<Event> eventsByCat = eventRepository.findAllByCategoryId(catId);
-        if (eventsByCat.isEmpty()) {
+        if (!eventRepository.existsByCategoryId(catId)) {
             categoryRepository.deleteById(catId);
             log.info("Категория удалена " + catId);
         } else {

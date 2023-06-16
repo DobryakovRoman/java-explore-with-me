@@ -34,23 +34,28 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     @Query("SELECT event FROM Event event " +
             "WHERE (lower(event.annotation) LIKE %:text% " +
             "OR lower(event.description) LIKE %:text%) " +
+            "AND event.state = :state " +
             "ORDER BY event.eventDate DESC")
-    List<Event> findEventsByText(String text, Pageable page);
+    List<Event> findEventsByText(String text, EventState state, Pageable page);
 
     @Query("SELECT event FROM Event event " +
             "WHERE (lower(event.annotation) LIKE %:text% " +
             "OR lower(event.description) LIKE %:text%) " +
             "AND event.eventDate >= :startDate " +
             "AND event.eventDate <= :endDate " +
+            "AND event.state = :state " +
             "ORDER BY event.eventDate DESC")
-    List<Event> findAllByTextAndDateRange(String text, LocalDateTime startDate, LocalDateTime endDate, Pageable page);
+    List<Event> findAllByTextAndDateRange(String text, LocalDateTime startDate, LocalDateTime endDate, EventState state, Pageable page);
 
     List<Event> findAllByCategoryId(Long catId);
 
+    Boolean existsByCategoryId(Long catId);
+
     @Query("SELECT event FROM Event event " +
             "WHERE event.category.id in :categories " +
+            "AND event.state = :state " +
             "ORDER BY event.eventDate DESC")
-    List<Event> findAllByCategoryIdPageable(List<Long> categories, Pageable page);
+    List<Event> findAllByCategoryIdPageable(List<Long> categories, EventState state, Pageable page);
 
     @Query("SELECT DISTINCT event FROM Event event " +
             "WHERE (event.annotation LIKE COALESCE(:text, event.annotation) OR event.description LIKE COALESCE(:text, event.description)) " +
@@ -58,8 +63,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "AND (:paid IS NULL OR event.paid = :paid) " +
             "AND event.eventDate >= COALESCE(:rangeStart, event.eventDate) " +
             "AND event.eventDate <= COALESCE(:rangeEnd, event.eventDate) " +
+            "AND event.state = :state " +
             "ORDER BY event.eventDate DESC")
-    List<Event> findEventList(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart, LocalDateTime rangeEnd);
-
+    List<Event> findEventList(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart, LocalDateTime rangeEnd, EventState state);
 
 }

@@ -44,7 +44,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto addUser(NewUserRequest newUserDto) {
-        if (userRepository.findByName(newUserDto.getName()).size() > 0) {
+        if (userRepository.countByName(newUserDto.getName()) > 0) {
             throw new ConflictException("Пользователь " + newUserDto.getName() + " уже существует");
         }
         User savedUser = userRepository.save(UserDtoMapper.mapNewUserRequestToUser(newUserDto));

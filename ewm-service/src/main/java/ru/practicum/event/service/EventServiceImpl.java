@@ -57,7 +57,7 @@ public class EventServiceImpl implements EventService {
         event.setInitiator(user);
         event.setCreatedOn(LocalDateTime.now());
         event.setState(EventState.PENDING);
-        Integer confirmedRequests = requestRepository.findRequestByEventIdAndStatus(event.getId(), "CONFIRMED").size();
+        Long confirmedRequests = requestRepository.countByEventAndStatuses(event.getId(), List.of("CONFIRMED"));
         if (event.getPaid() == null) {
             event.setPaid(false);
         }
@@ -96,13 +96,27 @@ public class EventServiceImpl implements EventService {
             eventStateList = Arrays.stream(EventState.values()).collect(Collectors.toList());
         }
         List<EventFullDto> dtos;
+
         if (users == null && categories == null) {
-            dtos = eventRepository.findAll(PageRequest.of(from / size, size)).getContent().stream()
-                    .map(this::getEventFullDto)
+            ArrayList<Event> events = new ArrayList<>(eventRepository.findAll(PageRequest.of(from / size, size)).getContent());
+            List<ParticipationRequest> requestsByEventIds = requestRepository.findByEventIds(events.stream()
+                    .mapToLong(e -> e.getId()).boxed().collect(Collectors.toList()));
+            dtos = events.stream()
+                    .map(e -> EventDtoMapper.mapEventToFullDto(e,
+                            requestsByEventIds.stream()
+                                    .filter(r -> r.getEvent().getId().equals(e.getId()))
+                                    .count()))
                     .collect(Collectors.toList());
         } else {
-            dtos = eventRepository.findAllEventsWithDates(users, eventStateList, categories, rangeStartDateTime, rangeEndDateTime, PageRequest.of(from / size, size)).stream()
-                    .map(this::getEventFullDto)
+            List<Event> allEventsWithDates = new ArrayList<>(eventRepository.findAllEventsWithDates(users,
+                    eventStateList, categories, rangeStartDateTime, rangeEndDateTime, PageRequest.of(from / size, size)));
+            List<ParticipationRequest> requestsByEventIds = requestRepository.findByEventIds(allEventsWithDates.stream()
+                    .mapToLong(e -> e.getId()).boxed().collect(Collectors.toList()));
+            dtos = allEventsWithDates.stream()
+                    .map(e -> EventDtoMapper.mapEventToFullDto(e,
+                            requestsByEventIds.stream()
+                                    .filter(r -> r.getEvent().getId().equals(e.getId()))
+                                    .count()))
                     .collect(Collectors.toList());
         }
         dtos = getViewCounters(dtos);
@@ -202,7 +216,7 @@ public class EventServiceImpl implements EventService {
         Boolean sortDate = sort.equals("EVENT_DATE");
         if (sortDate) {
             if (rangeStart == null && rangeEnd == null && categories != null) {
-                events = eventRepository.findAllByCategoryIdPageable(categories, PageRequest.of(from / size, size));
+                events = eventRepository.findAllByCategoryIdPageable(categories, EventState.PUBLISHED, PageRequest.of(from / size, size));
             } else {
                 if (rangeStart == null) {
                     startDate = LocalDateTime.now();
@@ -213,7 +227,7 @@ public class EventServiceImpl implements EventService {
                     text = "";
                 }
                 if (rangeEnd == null) {
-                    events = eventRepository.findEventsByText(text.toLowerCase(), PageRequest.of(from / size, size));
+                    events = eventRepository.findEventsByText(text.toLowerCase(), EventState.PUBLISHED, PageRequest.of(from / size, size));
                 } else {
                     endDate = LocalDateTime.parse(rangeEnd, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                     if (startDate.isAfter(endDate)) {
@@ -222,6 +236,7 @@ public class EventServiceImpl implements EventService {
                         events = eventRepository.findAllByTextAndDateRange(text.toLowerCase(),
                                 startDate,
                                 endDate,
+                                EventState.PUBLISHED,
                                 PageRequest.of(from / size, size));
                     }
                 }
@@ -242,11 +257,8 @@ public class EventServiceImpl implements EventService {
                     throw new WrongDataException("Дата и время начала поиска не должна быть позже даты и времени конца поиска");
                 }
             }
-            events = eventRepository.findEventList(text, categories, paid, startDate, endDate);
+            events = eventRepository.findEventList(text, categories, paid, startDate, endDate, EventState.PUBLISHED);
         }
-        events = events.stream()
-                .filter((event) -> EventState.PUBLISHED.equals(event.getState()))
-                .collect(Collectors.toList());
         statsClient.saveHit(new EndpointHitDto("ewm-service",
                 uri,
                 ip,
@@ -284,17 +296,16 @@ public class EventServiceImpl implements EventService {
             String[] split = statsDto.getUri().split("/");
             eventIdsWithViewsCounter.put(Long.parseLong(split[2]), Math.toIntExact(statsDto.getHits()));
         }
-
         List<ParticipationRequest> requests = requestRepository.findByEventIds(new ArrayList<>(eventIdsWithViewsCounter.keySet()));
-        List<EventShortDto> dtos = events.stream()
+        return events.stream()
                 .map(EventDtoMapper::mapEventToShortDto)
+                .peek(dto -> dto.setConfirmedRequests(
+                        requests.stream()
+                                .filter((request -> request.getEvent().getId().equals(dto.getId())))
+                                .count()
+                ))
+                .peek(dto -> dto.setViews(eventIdsWithViewsCounter.get(dto.getId())))
                 .collect(Collectors.toList());
-
-        for (EventShortDto dto : dtos) {
-            dto.setConfirmedRequests(requestRepository.countByEventAndStatuses(dto.getId(), List.of("CONFIRMED")));
-            dto.setViews(eventIdsWithViewsCounter.get(dto.getId()));
-        }
-        return dtos;
     }
 
     EventFullDto getViewsCounter(EventFullDto eventFullDto) {
@@ -313,11 +324,39 @@ public class EventServiceImpl implements EventService {
     }
 
     List<EventFullDto> getViewCounters(List<EventFullDto> dtos) {
-        return dtos.stream().map(this::getViewsCounter).collect(Collectors.toList());
+        if (dtos.size() > 0) {
+            HashMap<Long, Integer> eventIdsWithViewsCounter = new HashMap<>();
+            LocalDateTime lowLocalDateTime = LocalDateTime.parse(dtos.get(0).getCreatedOn().replace(" ", "T"));
+            List<String> uris = new ArrayList<>();
+            for (EventFullDto dto : dtos) {
+                eventIdsWithViewsCounter.put(dto.getId(), 0);
+                uris.add("/events/" + dto.getId().toString());
+                if (lowLocalDateTime.isAfter(LocalDateTime.parse(dto.getCreatedOn().replace(" ", "T")))) {
+                    lowLocalDateTime = LocalDateTime.parse(dto.getCreatedOn().replace(" ", "T"));
+                }
+            }
+            List<StatsDto> viewsCounter = getViewsCounter(uris, lowLocalDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            for (StatsDto statsDto : viewsCounter) {
+                String[] split = statsDto.getUri().split("/");
+                eventIdsWithViewsCounter.put(Long.parseLong(split[2]), Math.toIntExact(statsDto.getHits()));
+            }
+            ArrayList<Long> longs = new ArrayList<>(eventIdsWithViewsCounter.keySet());
+            List<ParticipationRequest> requests = requestRepository.findByEventIdsAndStatus(longs, "CONFIRMED");
+            return dtos.stream()
+                    .peek(dto -> dto.setConfirmedRequests(
+                            requests.stream()
+                                    .filter((request -> request.getEvent().getId().equals(dto.getId())))
+                                    .count()
+                    ))
+                    .peek(dto -> dto.setViews(eventIdsWithViewsCounter.get(dto.getId())))
+                    .collect(Collectors.toList());
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     EventFullDto getEventFullDto(Event event) {
-        Integer confirmed = requestRepository.findRequestByEventIdAndStatus(event.getId(), "CONFIRMED").size();
+        Long confirmed = requestRepository.countByEventAndStatuses(event.getId(), List.of("CONFIRMED"));
         return EventDtoMapper.mapEventToFullDto(event, confirmed);
     }
 
@@ -428,6 +467,4 @@ public class EventServiceImpl implements EventService {
         event.setLocation(locationRepository.save(event.getLocation()));
         log.info("Локация сохранена " + event.getLocation().getId());
     }
-
-
 }
