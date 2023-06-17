@@ -23,8 +23,6 @@ public class EventController {
 
     final EventService eventService;
 
-    final HttpServletRequest request;
-
     @GetMapping("/admin/events")
     public List<EventFullDto> getEvents(@RequestParam(required = false) List<Long> users,
                                         @RequestParam(required = false) List<String> states,
@@ -45,7 +43,8 @@ public class EventController {
     }
 
     @GetMapping("/events/{id}")
-    public EventFullDto getEventById(@PathVariable Long id) {
+    public EventFullDto getEventById(@PathVariable Long id,
+                                     HttpServletRequest request) {
         log.info("Получение подробной информации об опубликованном событии по его идентификатору");
         return eventService.getEventDtoById(id, request.getRequestURI(), request.getRemoteAddr());
     }
@@ -59,7 +58,8 @@ public class EventController {
                                                     @RequestParam(required = false, defaultValue = "false") Boolean onlyAvailable,
                                                     @RequestParam(required = false, defaultValue = "EVENT_DATE") String sort,
                                                     @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
-                                                    @Positive @RequestParam(defaultValue = "10") Integer size) {
+                                                    @Positive @RequestParam(defaultValue = "10") Integer size,
+                                                    HttpServletRequest request) {
         log.info("Получение событий с возможностью фильтрации");
         return eventService.getEventsWithFilters(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size,
                 request.getRequestURI(), request.getRemoteAddr());
