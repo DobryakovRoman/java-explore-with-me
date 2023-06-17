@@ -10,7 +10,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.Objects;
 
 @Service
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -33,7 +32,7 @@ public class StatsClient {
     }
 
     public List<StatsDto> getStats(String start, String end, List<String> uris, Boolean unique) {
-        return List.of(Objects.requireNonNull(webClient.get()
+        return List.of(webClient.get()
                 .uri(uriWithParams -> uriWithParams.path("/stats")
                         .queryParam("start", start)
                         .queryParam("end", end)
@@ -42,6 +41,6 @@ public class StatsClient {
                         .build())
                 .retrieve()
                 .bodyToMono(StatsDto[].class)
-                .block()));
+                .block());
     }
 }
