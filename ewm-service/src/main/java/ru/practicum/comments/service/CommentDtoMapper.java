@@ -6,9 +6,6 @@ import ru.practicum.comments.model.Comment;
 import ru.practicum.event.service.EventDtoMapper;
 import ru.practicum.user.service.UserDtoMapper;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-
 @Component
 public class CommentDtoMapper {
     public static CommentDto mapCommentToDto(Comment comment) {
@@ -17,19 +14,19 @@ public class CommentDtoMapper {
                 .text(comment.getText())
                 .event(EventDtoMapper.mapEventToShortDto(comment.getEvent()))
                 .author(UserDtoMapper.mapUserToShortDto(comment.getAuthor()))
-                .created(comment.getCreated().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .created(comment.getCreated())
                 .state(comment.getState())
                 .published(comment.getPublished() == null ?
-                        null : comment.getPublished().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                        null : comment.getPublished())
                 .updated(comment.getUpdated() == null ?
-                        null : comment.getUpdated().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                        null : comment.getUpdated())
                 .build();
     }
 
     public static Comment mapDtoToComment(CommentDto dto) {
         return Comment.builder()
                 .text(dto.getText())
-                .created(LocalDateTime.now())
+                .created(dto.getCreated())
                 .state("NEW")
                 .build();
     }
