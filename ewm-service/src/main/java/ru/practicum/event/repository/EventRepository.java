@@ -67,4 +67,5 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "ORDER BY event.eventDate DESC")
     List<Event> findEventList(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart, LocalDateTime rangeEnd, EventState state);
 
+
 }

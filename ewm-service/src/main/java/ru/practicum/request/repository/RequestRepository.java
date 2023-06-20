@@ -2,8 +2,10 @@ package ru.practicum.request.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import ru.practicum.event.model.EventState;
 import ru.practicum.request.model.ParticipationRequest;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface RequestRepository extends JpaRepository<ParticipationRequest, Long> {
@@ -34,6 +36,15 @@ public interface RequestRepository extends JpaRepository<ParticipationRequest, L
 
     @Query("SELECT COUNT(r) FROM ParticipationRequest r " +
             "WHERE r.event.id = :eventId " +
-            "AND r.status in :statuses")
+            "AND r.status in :statuses ")
     Long countByEventAndStatuses(Long eventId, List<String> statuses);
+
+    @Query("SELECT COUNT(r) FROM ParticipationRequest r " +
+            "WHERE r.requester.id = :userId " +
+            "AND r.event.id = :eventId " +
+            "AND r.event.eventDate <= :eventDate " +
+            "AND r.event.state = :state " +
+            "AND r.status in :statuses ")
+    Long countByPublishedEventsAndStatuses(Long userId, Long eventId, LocalDateTime eventDate, EventState state, List<String> statuses);
+
 }
