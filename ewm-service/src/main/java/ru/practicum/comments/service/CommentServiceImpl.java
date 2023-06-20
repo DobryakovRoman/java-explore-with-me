@@ -74,6 +74,9 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public CommentDto updateComment(Long userId, Long commentId, CommentDto updateCommentDto) {
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new NotFoundException("Пользователь не найден" + eventId)
+        );
         Comment newComment = getCommentFromDto(userId, commentId, updateCommentDto);
         Comment comment = commentRepository.findById(commentId).orElseThrow(
                 () -> new NotFoundException("Комментарий не найден " + commentId)
@@ -146,9 +149,7 @@ public class CommentServiceImpl implements CommentService {
         Event event = eventRepository.findById(eventId).orElseThrow(
                 () -> new NotFoundException("Cобытие не найдено " + eventId)
         );
-        User user = userRepository.findById(userId).orElseThrow(
-                () -> new NotFoundException("Пользователь не найден" + eventId)
-        );
+
         Comment comment = CommentDtoMapper.mapDtoToComment(commentDto);
         comment.setAuthor(user);
         comment.setEvent(event);
