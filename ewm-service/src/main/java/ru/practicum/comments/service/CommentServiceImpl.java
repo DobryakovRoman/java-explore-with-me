@@ -46,7 +46,7 @@ public class CommentServiceImpl implements CommentService {
                 List.of("CONFIRMED", "ACCEPTED")
         );
         if (aLong > 0) {
-            comment = commentRepository.save(getCommentFromDto(userId, eventId, newCommentDto));
+            comment = commentRepository.save(getCommentFromDto(user, eventId, newCommentDto));
             log.info("Комментарий сохранен " + comment.getId());
         } else {
             throw new WrongDataException("Пользователь не был на событии, комментарий невозможно добавить.");
@@ -75,9 +75,9 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public CommentDto updateComment(Long userId, Long commentId, CommentDto updateCommentDto) {
         User user = userRepository.findById(userId).orElseThrow(
-                () -> new NotFoundException("Пользователь не найден" + eventId)
+                () -> new NotFoundException("Пользователь не найден " + userId)
         );
-        Comment newComment = getCommentFromDto(userId, commentId, updateCommentDto);
+        Comment newComment = getCommentFromDto(user, commentId, updateCommentDto);
         Comment comment = commentRepository.findById(commentId).orElseThrow(
                 () -> new NotFoundException("Комментарий не найден " + commentId)
         );
@@ -145,11 +145,10 @@ public class CommentServiceImpl implements CommentService {
         return CommentDtoMapper.mapCommentToDto(commentRepository.save(comment));
     }
 
-    Comment getCommentFromDto(Long userId, Long eventId, CommentDto commentDto) {
+    Comment getCommentFromDto(User user, Long eventId, CommentDto commentDto) {
         Event event = eventRepository.findById(eventId).orElseThrow(
                 () -> new NotFoundException("Cобытие не найдено " + eventId)
         );
-
         Comment comment = CommentDtoMapper.mapDtoToComment(commentDto);
         comment.setAuthor(user);
         comment.setEvent(event);
